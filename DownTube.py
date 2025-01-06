@@ -11,9 +11,9 @@ print(r'''
 ''')
 
 def download_video(url):
-    # Set up options for yt-dlp
+    # Set up options for yt-dlp to always download mp4
     ydl_opts = {
-        'format': 'bestvideo+bestaudio/best',  # Download the best video and audio
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=mp4]/mp4',  # Download only mp4 video and audio
         'merge_output_format': 'mp4',  # Ensure the final output is in MP4 format
         'outtmpl': '%(title)s.%(ext)s',  # Save video with its title
         'noplaylist': True,  # Avoid downloading playlists (just the single video)
@@ -28,7 +28,28 @@ def download_video(url):
 
     # Create a downloader instance
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
+        try:
+            # List available formats
+            info_dict = ydl.extract_info(url, download=False)
+            formats = info_dict.get('formats', [])
+            print("Available formats:")
+            for f in formats:
+                # Print only MP4 formats
+                if f.get('ext') == 'mp4':
+                    resolution = f.get('height', 'N/A')
+                    format_id = f['format_id']
+                    print(f"Resolution: {resolution}p - Format ID: {format_id}")
+
+            # Prompt user to choose the format
+            selected_format = input("Enter the format ID you want to download: ").strip()
+
+            # Update the format option and download
+            ydl_opts['format'] = selected_format
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+
+        except yt_dlp.utils.DownloadError as e:
+            print(f"Error: {e}")
 
 # Optional: Hook to show download progress
 def my_hook(d):
