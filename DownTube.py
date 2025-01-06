@@ -1,20 +1,29 @@
 import yt_dlp
-print (r'''
+
+print(r'''
    ____                       ______     _       
   (|   \                     (_) |      | |      
    |    | __           _  _      |      | |   _  
   _|    |/  \_|  |  |_/ |/ |   _ ||   | |/ \_|/  
  (/\___/ \__/  \/ \/    |  |_/(_/  \_/|_/\_/ |__/
+
 @Copyright: ALHARAMM
 ''')
 
 def download_video(url):
     # Set up options for yt-dlp
     ydl_opts = {
-        'format': 'bestvideo+bestaudio/best',  # Download the best video and audio, or the best if merged is unavailable
+        'format': 'bestvideo+bestaudio/best',  # Download the best video and audio
+        'merge_output_format': 'mp4',  # Ensure the final output is in MP4 format
         'outtmpl': '%(title)s.%(ext)s',  # Save video with its title
         'noplaylist': True,  # Avoid downloading playlists (just the single video)
-        'progress_hooks': [my_hook]  # Optional: Show download progress
+        'progress_hooks': [my_hook],  # Show download progress
+        'postprocessors': [
+            {  # Convert the video to MP4 if necessary
+                'key': 'FFmpegVideoConvertor',
+                'preferedformat': 'mp4'
+            }
+        ]
     }
 
     # Create a downloader instance
