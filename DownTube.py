@@ -1,4 +1,5 @@
 import yt_dlp
+import os
 
 print(r'''
    ____                       ______     _       
@@ -10,46 +11,39 @@ print(r'''
 @Copyright: ALHARAMM
 ''')
 
+def sanitize_filename(filename):
+    """Sanitize filenames to avoid issues with special characters."""
+    return "".join(c if c.isalnum() or c in " _-()" else "_" for c in filename)
+
 def download_video(url):
-    # Set up options for yt-dlp to always download mp4
+    # Set up options for yt-dlp to download video in 232 format and best audio
     ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=mp4]/mp4',  # Download only mp4 video and audio
+        'format': '232+bestaudio',  # Download format ID 232 and best audio
         'merge_output_format': 'mp4',  # Ensure the final output is in MP4 format
         'outtmpl': '%(title)s.%(ext)s',  # Save video with its title
-        'noplaylist': True,  # Avoid downloading playlists (just the single video)
-        'progress_hooks': [my_hook],  # Show download progress
+        'noplaylist': True,  # Avoid downloading playlists
         'postprocessors': [
-            {  # Convert the video to MP4 if necessary
-                'key': 'FFmpegVideoConvertor',
-                'preferedformat': 'mp4'
+            {  # Merge video and audio using FFmpeg
+                'key': 'FFmpegMerger'
             }
         ]
     }
 
-    # Create a downloader instance
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
-            # List available formats
+    try:
+        # Create a downloader instance
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # Fetch video information
             info_dict = ydl.extract_info(url, download=False)
-            formats = info_dict.get('formats', [])
-            print("Available formats:")
-            for f in formats:
-                # Print only MP4 formats
-                if f.get('ext') == 'mp4':
-                    resolution = f.get('height', 'N/A')
-                    format_id = f['format_id']
-                    print(f"Resolution: {resolution}p - Format ID: {format_id}")
+            video_title = sanitize_filename(info_dict.get("title", "video"))
+            
+            print(f"\nDownloading video: {video_title}")
+            ydl.download([url])
+            print(f"Download complete: {video_title}.mp4")
 
-            # Prompt user to choose the format
-            selected_format = input("Enter the format ID you want to download: ").strip()
-
-            # Update the format option and download
-            ydl_opts['format'] = selected_format
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
-
-        except yt_dlp.utils.DownloadError as e:
-            print(f"Error: {e}")
+    except yt_dlp.utils.DownloadError as e:
+        print(f"Download Error: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
 
 # Optional: Hook to show download progress
 def my_hook(d):
